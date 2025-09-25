@@ -1,5 +1,9 @@
 #pragma once
-
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 /**
  * @file hash_table.h
  * @author write both your names here
@@ -12,6 +16,19 @@
  *
  * @see $CANVAS_OBJECT_REFERENCE$/assignments/gb54499f3b7b264e3af3b68c756090f52
  */
+
+
+typedef struct entry entry_t;
+
+typedef struct option option_t;
+
+struct option
+{
+  bool success;
+  char *value;
+};
+
+
 
 typedef struct hash_table ioopm_hash_table_t;
 
@@ -33,7 +50,7 @@ void ioopm_hash_table_insert(ioopm_hash_table_t *ht, int key, char *value);
 /// @param ht hash table operated upon
 /// @param key key to lookup
 /// @return the value mapped to by key (FIXME: incomplete)
-char *ioopm_hash_table_lookup(ioopm_hash_table_t *ht, int key);
+option_t ioopm_hash_table_lookup(ioopm_hash_table_t *ht, int key);
 
 /// @brief remove any mapping from key to a value
 /// @param ht hash table operated upon

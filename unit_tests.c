@@ -40,6 +40,50 @@ void test_hash_table_insert(ioopm_hash_table_t *ht, int key)
   ioopm_hash_table_lookup(ht,key);
 }
 
+void test_insert_once()
+{
+
+  ioopm_hash_table_t *h = ioopm_hash_table_create();
+  ioopm_hash_table_lookup(h, 10);
+  ioopm_hash_table_insert(h, 10, "val1");
+  ioopm_hash_table_insert(h, 10, "val2");
+  ioopm_hash_table_lookup(h, 10);
+  ioopm_hash_table_destroy(h);
+}
+
+void test_lookup()
+{
+  ioopm_hash_table_t *ht = ioopm_hash_table_create();
+  ioopm_hash_table_lookup(ht, 1);
+  ioopm_hash_table_destroy(ht);
+}
+
+void test_insert(void) {
+  ioopm_hash_table_t *ht = ioopm_hash_table_create();
+
+  option_t lookup_return_pre = ioopm_hash_table_lookup(ht, 1);
+  CU_ASSERT_EQUAL(lookup_return_pre.success, false);
+  CU_ASSERT_PTR_NULL(lookup_return_pre.value);
+
+  ioopm_hash_table_insert(ht, 1, "Test");
+  option_t lookup_return_1 = ioopm_hash_table_lookup(ht, 1);
+  CU_ASSERT_EQUAL(lookup_return_1.success, true);
+  CU_ASSERT_STRING_EQUAL(lookup_return_1.value, "Test");
+
+  ioopm_hash_table_insert(ht, 2, "Another test");
+  option_t lookup_return_2 = ioopm_hash_table_lookup(ht, 2);
+  CU_ASSERT_EQUAL(lookup_return_2.success, true);
+  CU_ASSERT_STRING_EQUAL(lookup_return_2.value, "Another test");
+
+  ioopm_hash_table_insert(ht, 18, "Same bucket test");
+  option_t lookup_return_3 = ioopm_hash_table_lookup(ht, 18);
+  CU_ASSERT_EQUAL(lookup_return_3.success, true);
+  CU_ASSERT_STRING_EQUAL(lookup_return_3.value, "Same bucket test");
+
+  ioopm_hash_table_destroy(ht);
+}
+
+
 
 int main() {
   // First we try to set up CUnit, and exit if we fail
@@ -61,8 +105,10 @@ int main() {
   // the test in question. If you want to add another test, just
   // copy a line below and change the information
   if (
-    //(CU_add_test(my_test_suite, "Basic tests of is_number", test_is_number) == NULL) ||
-    (CU_add_test(my_test_suite, "Basic tests of test_create_destroy", test_create_destroy) == NULL) ||
+    //(CU_add_test(my_test_suite, "Basic tests of test_create_destroy", test_create_destroy) == NULL) ||
+    //(CU_add_test(my_test_suite, "Basic tests of test insert once", test_insert_once) == NULL) ||
+    (CU_add_test(my_test_suite, "tests of test insert", test_insert) == NULL) ||
+    //(CU_add_test(my_test_suite, "tests of lookup", test_lookup) == NULL) ||
     0
 
   )
