@@ -1,6 +1,8 @@
 #include "hash_table.h"
+#define No_Buckets 17
 typedef struct hash_table ioopm_hash_table_t;
 typedef struct entry entry_t;
+
 
 struct entry
 {
@@ -12,7 +14,8 @@ struct entry
 
 struct hash_table
 { 
-  entry_t buckets[17];
+  entry_t buckets[No_Buckets];
+  int size;
 };
 
 
@@ -34,19 +37,8 @@ static void entry_destroy(entry_t *t){ //dont free t-> key since its an int not 
 
   
 
-
 void ioopm_hash_table_destroy(ioopm_hash_table_t *ht) {
-  for (int i = 0; i < 17; i++) {
-      // Only destroy entries that were dynamically created
-     /* if (ht->buckets[i].key) { //TODO it never exacutes since dummy node keys == 0 wich results in statement always result in false
-          entry_destroy(&ht->buckets[i]);
-          puts("tried to destroy");
-        }*/
-
-
-        entry_destroy(ht->buckets[i].next);  // skip dummy node
-        ht->buckets[i].next = NULL;         // safety
-  }
+  ioopm_hash_table_clear(ht);
   free(ht); // free the hash_table struct itself
 }
 
@@ -79,7 +71,7 @@ static entry_t *find_previous_entry_for_key(entry_t *bucket, int key) {
 void ioopm_hash_table_insert(ioopm_hash_table_t *ht, int key, char *value)
 {
   /// Calculate the bucket for this entry
-  int bucket = key % 17;
+  int bucket = key % No_Buckets;
   /// Search for an existing entry for a key
   entry_t *entry = find_previous_entry_for_key(&ht->buckets[bucket], key);
   entry_t *next = entry->next;
@@ -92,13 +84,14 @@ void ioopm_hash_table_insert(ioopm_hash_table_t *ht, int key, char *value)
   else
     {
       entry->next = entry_create(key, value, next);
+      ht->size++;
     }
 }
 
 
 option_t ioopm_hash_table_lookup(ioopm_hash_table_t *ht, int key)
 {
-  entry_t bucket = ht->buckets[key%17]; //hade bara 17 innan 
+  entry_t bucket = ht->buckets[key% No_Buckets]; //hade bara 17 innan 
   entry_t *prev_entry = find_previous_entry_for_key(&bucket, key);
 
   if (prev_entry->next == NULL)
@@ -106,4 +99,110 @@ option_t ioopm_hash_table_lookup(ioopm_hash_table_t *ht, int key)
     return (option_t) { .success = false };
   }
   return (option_t){.success = true, .value = prev_entry->next->value};
+}
+
+char *ioopm_hash_table_remove(ioopm_hash_table_t *ht, int key)
+{
+  /// Calculate the bucket for this entry
+  int bucket = key % No_Buckets;
+  /// Search for an existing entry for a key
+  entry_t *prev_entry = find_previous_entry_for_key(&ht->buckets[bucket], key);
+  entry_t *entry = prev_entry->next;
+
+  if(entry==NULL){ //if key does not exist: do nothing;
+    return NULL;
+  }
+  else{
+    prev_entry->next = entry->next; //should work even if entry is the last, since its .next will be NULL
+    char* value = entry->value; //save the value that will be returned
+    free(entry); 
+    ht->size--;
+    return value;
+  }
+}
+
+int ioopm_hash_table_size(ioopm_hash_table_t *ht)
+{
+  return ht->size;
+}
+bool ioopm_hash_table_is_empty(ioopm_hash_table_t *ht)
+{
+  return ioopm_hash_table_size(ht) == 0;
+}
+
+void ioopm_hash_table_clear(ioopm_hash_table_t *ht)
+{
+  if(ioopm_hash_table_is_empty(ht)){
+    return;
+  }
+  for (int i = 0; i < No_Buckets; i++) {
+      // Only destroy entries that were dynamically created
+     /* if (ht->buckets[i].key) { //TODO it never exacutes since dummy node keys == 0 which results in statement always result in false
+          entry_destroy(&ht->buckets[i]);
+          puts("tried to destroy");
+        }*/
+        entry_destroy(ht->buckets[i].next);  // skip dummy node
+        ht->buckets[i].next = NULL;         // safety
+  }
+}
+
+int *ioopm_hash_table_keys(ioopm_hash_table_t *ht) {
+    int size = ioopm_hash_table_size(ht);
+    int *arr = malloc(size * sizeof(int));
+    if (!arr) return NULL;
+
+    int count = 0;
+    for (int i = 0; i < No_Buckets; i++) {
+        entry_t *current = ht->buckets[i].next;
+        while (current) {
+            arr[count++] = current->key;
+            current = current->next;
+        }
+    }
+
+    return arr; // caller must free()
+}
+
+char **ioopm_hash_table_values(ioopm_hash_table_t *ht){
+  int size = ioopm_hash_table_size(ht);
+  char **arr = malloc(size * sizeof(char *));
+    if (!arr) return NULL;
+
+    int count = 0;
+    for (int i = 0; i < No_Buckets; i++) {
+        entry_t *current = ht->buckets[i].next;
+        while (current) {
+            arr[count++] = current->value;
+            current = current->next;
+        }
+    }
+
+    return arr; // caller must free() each string + the array
+}
+
+bool ioopm_hash_table_has_key(ioopm_hash_table_t *ht, int key)
+{
+  
+  int *arr = ioopm_hash_table_keys(ht);
+  for(int i = 0; i<ht->size;i++){
+    if(arr[i]==key){
+      free(arr);
+      return true;
+    }
+  }
+  free(arr);
+  return false;
+}
+
+bool ioopm_hash_table_has_value(ioopm_hash_table_t *ht, char *value)
+{
+    char **arr = ioopm_hash_table_values(ht);
+    for (int i = 0; i < ht->size; i++) {
+        if (strcmp(arr[i], value) == 0) {
+            free(arr);
+            return true;
+        }
+    }
+    free(arr);
+    return false;
 }

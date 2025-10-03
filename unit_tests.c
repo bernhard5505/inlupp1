@@ -83,7 +83,179 @@ void test_insert(void) {
   ioopm_hash_table_destroy(ht);
 }
 
+void test_remove() {
+  ioopm_hash_table_t *ht = ioopm_hash_table_create();
 
+  ioopm_hash_table_insert(ht, 1, "Test");
+  ioopm_hash_table_insert(ht, 18, "Another test");
+  ioopm_hash_table_insert(ht, 37, "Yet another test");
+
+  // verify existence
+  option_t lookup = ioopm_hash_table_lookup(ht, 18);
+  CU_ASSERT_TRUE(lookup.success);
+
+  // remove and verify
+  char *response = ioopm_hash_table_remove(ht, 18);
+  CU_ASSERT_STRING_EQUAL(response, "Another test");
+  option_t lookup_after_delete = ioopm_hash_table_lookup(ht, 18);
+  CU_ASSERT_FALSE(lookup_after_delete.success);
+
+  // verify that removing non existent key returns NULL pointer
+  response = ioopm_hash_table_remove(ht, 18);
+  CU_ASSERT_PTR_NULL(response);
+
+  ioopm_hash_table_destroy(ht);
+}
+
+void test_size()
+{
+  ioopm_hash_table_t *ht = ioopm_hash_table_create();
+  CU_ASSERT_EQUAL(ioopm_hash_table_size(ht), 0);
+  ioopm_hash_table_insert(ht,1,"test1");
+  CU_ASSERT_EQUAL(ioopm_hash_table_size(ht), 1);
+  ioopm_hash_table_insert(ht,18,"test2");
+  ioopm_hash_table_insert(ht, 2,"test3");
+  CU_ASSERT_EQUAL(ioopm_hash_table_size(ht), 3);
+  ioopm_hash_table_destroy(ht);
+}
+void test_is_empty()
+{
+  ioopm_hash_table_t *ht = ioopm_hash_table_create();
+  CU_ASSERT_TRUE(ioopm_hash_table_is_empty(ht));
+  ioopm_hash_table_insert(ht,1,"hej");
+  CU_ASSERT_FALSE(ioopm_hash_table_is_empty(ht));
+  ioopm_hash_table_destroy(ht);
+}
+
+void test_clear() {
+  ioopm_hash_table_t *ht = ioopm_hash_table_create();
+  ioopm_hash_table_insert(ht, 1, "Test");
+  ioopm_hash_table_insert(ht, 2, "Test");
+  ioopm_hash_table_insert(ht, 3, "Test");
+
+  ioopm_hash_table_clear(ht);
+
+  CU_ASSERT_TRUE(ioopm_hash_table_is_empty(ht));
+  ioopm_hash_table_destroy(ht);
+}
+
+void test_keys()
+{
+  ioopm_hash_table_t *ht = ioopm_hash_table_create();
+  int keys[5] = {3,10,15,49,88};
+  bool found[5] = {false};
+  for(int i = 0; i<5;i++){
+    ioopm_hash_table_insert(ht,keys[i],"value");
+  }
+  int *foundkeys = ioopm_hash_table_keys(ht);
+  for(int i = 0; i<5; i++){
+    bool match = false;
+    for(int j = 0; j<5; j++){
+      if(foundkeys[i] == keys[j]){
+        found[j] = true;
+        match = true;
+        break;
+      }
+    }
+    if(!match){
+      CU_FAIL("Found a key that was never inserted!");
+    }
+  }
+  for(int i = 0; i<5; i++){
+    CU_ASSERT_TRUE(found[i]);
+  }
+  free(foundkeys);
+  ioopm_hash_table_destroy(ht);
+}
+
+void test_values()
+{
+  ioopm_hash_table_t *ht = ioopm_hash_table_create();
+  char *values[5] = {"hej","lej","fej","dig","sig"};
+  bool found[5] = {false};
+  for(int i = 0; i<5;i++){
+    ioopm_hash_table_insert(ht,i,values[i]);
+  }
+  char **foundvalues = ioopm_hash_table_values(ht);
+  for(int i = 0; i<5; i++){
+    bool match = false;
+    for(int j = 0; j<5; j++){
+      if (strcmp(foundvalues[i], values[j]) == 0){
+        found[j] = true;
+        match = true;
+        break;
+      }
+    }
+    if(!match){
+      CU_FAIL("Found a value that was never inserted!");
+    }
+  }
+  for(int i = 0; i<5; i++){
+    CU_ASSERT_TRUE(found[i]);
+  }
+  /*
+  for(int i = 0; i<5;i++){
+    free(foundvalues[i]);
+  }*/
+  free(foundvalues);
+  ioopm_hash_table_destroy(ht);
+}
+
+void test_keys_and_values(){
+  ioopm_hash_table_t *ht = ioopm_hash_table_create();
+  int keys[5] = {3, 10, 42, 0, 99};
+  char *values[5] = {"hej", "ten", "fortytwo", "zero", "ninetynine"};
+  for(int i = 0; i < 5; i++){
+    ioopm_hash_table_insert(ht, keys[i], values[i]);
+  }
+  int *foundkeys = ioopm_hash_table_keys(ht);
+  char **foundvalues = ioopm_hash_table_values(ht);
+  for(int i = 0; i<5; i++){
+    bool matchkey = false;
+    for(int j = 0; j<5; j++){
+      if(foundkeys[i] == keys[j]){
+        matchkey = true;
+        CU_ASSERT(strcmp(foundvalues[i], values[j]) == 0);
+        
+      }
+    }
+    if (!matchkey){
+      CU_FAIL("Found a key that was never inserted!");
+    }
+  }
+  /*for(int i = 0; i<5;i++){
+    free(foundvalues[i]);
+  }*/
+  free(foundvalues);
+  free(foundkeys);
+  ioopm_hash_table_destroy(ht);
+
+}
+
+void test_has_key()
+{
+  ioopm_hash_table_t *ht = ioopm_hash_table_create();
+  int key1 = 1;
+  int key2 = 18;
+  CU_ASSERT_FALSE(ioopm_hash_table_has_key(ht,key1));
+  ioopm_hash_table_insert(ht,key1,"test");
+  CU_ASSERT_TRUE(ioopm_hash_table_has_key(ht,key1));
+  ioopm_hash_table_insert(ht,key2,"test2");
+  CU_ASSERT_TRUE(ioopm_hash_table_has_key(ht,key2));
+  ioopm_hash_table_destroy(ht);
+
+}
+
+void test_has_value()
+{
+  ioopm_hash_table_t *ht = ioopm_hash_table_create();
+  CU_ASSERT_FALSE(ioopm_hash_table_has_value(ht,"test1"));
+  ioopm_hash_table_insert(ht,1,"test1");
+  CU_ASSERT_TRUE(ioopm_hash_table_has_value(ht,"test1"));
+  ioopm_hash_table_destroy(ht);
+
+
+}
 
 int main() {
   // First we try to set up CUnit, and exit if we fail
@@ -107,8 +279,17 @@ int main() {
   if (
     //(CU_add_test(my_test_suite, "Basic tests of test_create_destroy", test_create_destroy) == NULL) ||
     //(CU_add_test(my_test_suite, "Basic tests of test insert once", test_insert_once) == NULL) ||
-    (CU_add_test(my_test_suite, "tests of test insert", test_insert) == NULL) ||
+    //(CU_add_test(my_test_suite, "tests of test insert", test_insert) == NULL) ||
+    //(CU_add_test(my_test_suite, "test of test_hash_table_remove", test_remove) == NULL) ||
     //(CU_add_test(my_test_suite, "tests of lookup", test_lookup) == NULL) ||
+    //(CU_add_test(my_test_suite, "test of test_size", test_size) == NULL) ||
+    //(CU_add_test(my_test_suite, "test of test_is_empty", test_is_empty) == NULL) ||
+    //(CU_add_test(my_test_suite, "test of test_is_empty", test_is_empty) == NULL) ||
+    //(CU_add_test(my_test_suite, "test of test_keys", test_keys) == NULL) ||
+    //(CU_add_test(my_test_suite, "test of test_values", test_values) == NULL) ||
+    //(CU_add_test(my_test_suite, "test of test_keys_and_values", test_keys_and_values) == NULL) ||
+    //(CU_add_test(my_test_suite, "test of test_has_key", test_has_key) == NULL) ||
+    (CU_add_test(my_test_suite, "test of test_has_value", test_has_value) == NULL) ||
     0
 
   )
